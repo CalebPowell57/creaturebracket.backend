@@ -1,0 +1,1 @@
+﻿INSERT INTO Character VALUES('Hamlethias', 1, GETUTCDATE(), 0)
