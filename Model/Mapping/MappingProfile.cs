@@ -6,7 +6,7 @@ namespace Model.Mapping
     {
         public MappingProfile()
         {
-            //MapCampaign();
+            MapBracket();
             //MapFile();
             //MapCharacter();
             //MapInventory();

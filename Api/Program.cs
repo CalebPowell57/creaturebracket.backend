@@ -9,8 +9,6 @@ var builder = WebApplication.CreateBuilder(args);
 //builder.Services.AddAuthentication(IISDefaults.AuthenticationScheme)
 ////.AddFacebook(facebookOptions =>
 ////{
-////    facebookOptions.AppId = "1151128808860361";
-////    facebookOptions.AppSecret = "73b0f4a6caf09a08f4a7336719c2a5b5";
 ////})
 //.AddNegotiate();
 
