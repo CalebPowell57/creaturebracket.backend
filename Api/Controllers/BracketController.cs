@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Model.Db;
+using Model.Dto;
 using Service;
 
 namespace Api.Controllers
@@ -24,6 +25,14 @@ namespace Api.Controllers
             var bracket = await _bracketService.GetActive();
 
             return bracket;
+        }
+
+        [HttpGet("bracket/{bracketId}")]
+        public async Task<IEnumerable<StandingsDto>> GetStandings([FromRoute] long bracketId)
+        {
+            var standings = await _bracketService.GetStandings(bracketId);
+
+            return standings;
         }
     }
 }

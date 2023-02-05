@@ -7,6 +7,7 @@ namespace Service.Extensions
         public static IServiceCollection AddServices(this IServiceCollection services)
         {
             services.AddScoped<BracketService>();
+            services.AddScoped<UserMatchupService>();
 
             return services;
         }
