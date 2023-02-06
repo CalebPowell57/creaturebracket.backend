@@ -38,12 +38,7 @@ namespace Api.Controllers
         [HttpPost]
         public async Task<bool> Post([FromBody] Model.Dto.Post.BracketDto bracket)
         {
-            for (var index = 0; index < bracket.CreatureCount / 2; index++)
-            {
-
-            }
-
-            _bracketService.Upsert(bracket);
+            _bracketService.NewBracket(bracket);
 
             await _bracketService.SaveChanges();
 

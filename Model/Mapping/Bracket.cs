@@ -10,6 +10,9 @@ namespace Model.Mapping
         {
             CreateMap<Bracket, BracketDto>()
                 .ReverseMap();
+
+            CreateMap<Dto.Post.BracketDto, Bracket>()
+                .ReverseMap();
         }
     }
 }

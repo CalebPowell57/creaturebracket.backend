@@ -56,5 +56,37 @@ namespace Service
 
             return standings;
         }
+
+        public void NewBracket(Model.Dto.Post.BracketDto dto)
+        {
+            var bracket = _mapper.Map<Bracket>(dto);
+
+            var roundCreatureCount = dto.CreatureCount;
+            var round = 0;
+            var matchups = new List<Matchup>();
+
+            while (roundCreatureCount != 1)
+            {
+                round++;
+                roundCreatureCount = roundCreatureCount / 2;
+
+                for (var index = 0; index < roundCreatureCount; index++)
+                {
+                    var matchup = new Matchup
+                    {
+                        Rank = index + 1,
+                        Round = round,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "calebpowell57",
+                    };
+
+                    matchups.Add(matchup);
+                }
+            }
+
+            bracket.Matchups = matchups;
+
+            Upsert(bracket);
+        }
     }
 }
