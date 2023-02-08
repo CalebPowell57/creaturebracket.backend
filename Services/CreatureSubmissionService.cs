@@ -13,6 +13,7 @@ namespace Service
         public async Task<IEnumerable<CreatureSubmissionDto>> Get(long bracketId)
         {
             var creatureSubmissions = await _dbSet
+                .Include(x => x.Votes)
                 .Where(x => x.BracketId == bracketId)
                 .ToListAsync();
 

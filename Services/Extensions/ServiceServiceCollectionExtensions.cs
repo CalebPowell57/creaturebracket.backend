@@ -8,6 +8,7 @@ namespace Service.Extensions
         {
             services.AddScoped<BracketService>();
             services.AddScoped<UserMatchupService>();
+            services.AddScoped<CreatureSubmissionService>();
 
             return services;
         }

@@ -7,10 +7,7 @@ namespace Model.Mapping
         public MappingProfile()
         {
             MapBracket();
-            //MapFile();
-            //MapCharacter();
-            //MapInventory();
-            //MapSpell();
+            MapCreatureSubmission();
         }
     }
 }

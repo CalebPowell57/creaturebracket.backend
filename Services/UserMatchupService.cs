@@ -19,34 +19,52 @@ namespace Service
                 .Where(x => x.User == user && x.BracketId == bracketId)
                 .ToListAsync();
 
-            var bracket = await _context.Bracket.SingleAsync(x => x.Id == bracketId);
-
-            var dto = _mapper.Map<List<UserMatchupDto>>(userMatchups);
+            var bracket = await _context.Bracket
+                .Include(x => x.Matchups)
+                    .ThenInclude(x => x.Creature1)
+                .Include(x => x.Matchups)
+                    .ThenInclude(x => x.Creature2)
+                .SingleAsync(x => x.Id == bracketId);
 
             var roundMatchupCount = bracket.CreatureCount;
+            var round = 0;
 
             if (!userMatchups.Any())
             {
-                for(int roundIndex = 0; roundIndex < bracket.RoundCount; roundIndex++)
+                while (roundMatchupCount != 1)
                 {
+                    round++;
                     roundMatchupCount = roundMatchupCount / 2;
 
-                    for (int matchupIndex = 0; matchupIndex < roundMatchupCount; matchupIndex++)
+                    for (var index = 0; index < roundMatchupCount; index++)
                     {
                         var matchup = new UserMatchupDto
                         {
+                            Rank = index + 1,
+                            Round = round,
                             BracketId = bracketId,
-                            Creature1Id = null,
-                            Creature2Id = null,
-                            Rank = matchupIndex + 1,
-                            Round = roundIndex + 1,
                             User = user,
                         };
 
-                        dto.Add(matchup);
+                        if (round == 1)
+                        {
+                            var actualMatchup = bracket.Matchups.SingleOrDefault(x => x.Round == round && x.Rank == index + 1);
+
+                            if (actualMatchup != null)
+                            {
+                                matchup.Creature1Id = actualMatchup.Creature1Id;
+                                matchup.Creature2Id = actualMatchup.Creature2Id;
+                                matchup.Creature1 = actualMatchup.Creature1;
+                                matchup.Creature2 = actualMatchup.Creature2;
+                            }
+                        }
+
+                        userMatchups.Add(matchup);
                     }
                 }
             }
+
+            var dto = _mapper.Map<List<UserMatchupDto>>(userMatchups);
 
             return dto;
         }

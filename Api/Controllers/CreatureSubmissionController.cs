@@ -27,7 +27,7 @@ namespace Api.Controllers
         }
 
         [HttpPost]
-        public async Task<bool> Post(CreatureSubmissionDto creatureSubmissionDto)
+        public async Task<bool> Post([FromBody] CreatureSubmissionDto creatureSubmissionDto)
         {
             _creatureSubmissionService.Upsert(creatureSubmissionDto);
             await _creatureSubmissionService.SaveChanges();

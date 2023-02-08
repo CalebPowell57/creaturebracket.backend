@@ -2,16 +2,10 @@
 {
     public static class Constants
     {
-        public static class FileType
+        public static class BracketPhase
         {
-            public const string Soundboard = "Soundboard";
-            public const string Map = "Map";
-        }
-
-        public static class NotificationType
-        {
-            public const string Message = "Message";
-            public const string Turn = "Turn";
+            public const string CreatureSubmission = "CreatureSubmission";
+            public const string Seeded = "Seeded";
         }
     }
 }

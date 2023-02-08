@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Db;
 using Microsoft.EntityFrameworkCore;
+using Model;
 using Model.Db;
 using Model.Dto;
 
@@ -10,7 +11,7 @@ namespace Service
     {
         public BracketService(CreatureBracketContext context, IMapper mapper) : base(context, mapper) { }
 
-        public async Task<BracketDto> GetActive()
+        public async Task<IEnumerable<BracketDto>> Get()
         {
             var brackets = await _dbSet
                 .Include(c => c.Creatures)
@@ -19,9 +20,7 @@ namespace Service
                 .Include(c => c.CreatureSubmissions)
                 .ToListAsync();
 
-            var bracket = brackets.First();//fix this
-
-            var dto = _mapper.Map<BracketDto>(bracket);
+            var dto = _mapper.Map<IEnumerable<BracketDto>>(brackets);
 
             return dto;
         }
@@ -57,6 +56,55 @@ namespace Service
             return standings;
         }
 
+        public async Task<IEnumerable<SeedItemDto>> GetRandomSeed(long bracketId)
+        {
+            var bracket = await _dbSet
+                .Include(c => c.CreatureSubmissions)
+                    .ThenInclude(cs => cs.Votes)
+                .SingleAsync(x => x.Id == bracketId);
+
+            if (bracket.CreatureCount > bracket.CreatureSubmissions.Count())
+            {
+                throw new Exception($"Unable to seed {bracket.Name}. Not enough creature submissions {bracket.CreatureSubmissions.Count()}/{bracket.CreatureCount}");
+            }
+
+            var randomSeeds = new List<(long Seed, string Name)>();
+            var currentSeed = 1;
+
+            foreach (var creatureSubmissionGroup in bracket.CreatureSubmissions.GroupBy(x => x.Votes.Count()).OrderByDescending(c => c.Key))
+            {
+                var random = new Random();
+                foreach (var creatureSubmission in creatureSubmissionGroup.OrderBy(x => random.Next()))
+                {
+                    (long Seed, string Name) seedItem = new(currentSeed, creatureSubmission.Name);
+
+                    randomSeeds.Add(seedItem);
+
+                    currentSeed++;
+                }
+            }
+
+            var seed = new List<SeedItemDto>();
+
+            for (var index = 0; index < bracket.CreatureCount / 2; index++)
+            {
+                var creature1 = randomSeeds.Single(x => x.Seed == index + 1);
+                var creature2 = randomSeeds.Single(x => x.Seed == bracket.CreatureCount - index);
+
+                var seedItem = new SeedItemDto
+                {
+                    Creature1Name = creature1.Name,
+                    Creature2Name = creature2.Name,
+                    Creature1Seed = creature1.Seed,
+                    Creature2Seed = creature2.Seed,
+                };
+
+                seed.Add(seedItem);
+            }
+
+            return seed;
+        }
+
         public void NewBracket(Model.Dto.Post.BracketDto dto)
         {
             var bracket = _mapper.Map<Bracket>(dto);
@@ -85,6 +133,47 @@ namespace Service
             }
 
             bracket.Matchups = matchups;
+
+            Upsert(bracket);
+        }
+
+        public void SaveSeeding(long bracketId, List<SeedItemDto> seedings)
+        {
+            var bracket = _dbSet
+                .Include(b => b.Matchups)
+                .Single(x => x.Id == bracketId)
+            ;
+
+            bracket.Phase = Constants.BracketPhase.Seeded;
+
+            var matchups = seedings.Select(s => new Matchup
+            {
+                Creature1 = new Creature
+                {
+                    Name = s.Creature1Name,
+                    BracketId = bracketId,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "calebpowell57",
+                    Image = "",
+                    Seed = s.Creature1Seed,
+                },
+                BracketId = bracketId,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "calebpowell57",
+                Creature2 = new Creature
+                {
+                    Name = s.Creature2Name,
+                    BracketId = bracketId,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = "calebpowell57",
+                    Image = "",
+                    Seed = s.Creature2Seed,
+                },
+                Rank = seedings.IndexOf(s),
+                Round = 1,
+            });
+
+            _context.Matchup.AddRange(matchups);
 
             Upsert(bracket);
         }

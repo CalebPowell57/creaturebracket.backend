@@ -20,9 +20,9 @@ namespace Api.Controllers
         }
 
         [HttpGet]
-        public async Task<Bracket> Get()
+        public async Task<IEnumerable<Bracket>> Get()
         {
-            var bracket = await _bracketService.GetActive();
+            var bracket = await _bracketService.Get();
 
             return bracket;
         }
@@ -35,10 +35,28 @@ namespace Api.Controllers
             return standings;
         }
 
+        [HttpGet("{bracketId}/randomseed")]
+        public async Task<IEnumerable<SeedItemDto>> GetRandomSeed([FromRoute] long bracketId)
+        {
+            var randomSeed = await _bracketService.GetRandomSeed(bracketId);
+
+            return randomSeed;
+        }
+
         [HttpPost]
         public async Task<bool> Post([FromBody] Model.Dto.Post.BracketDto bracket)
         {
             _bracketService.NewBracket(bracket);
+
+            await _bracketService.SaveChanges();
+
+            return true;
+        }
+
+        [HttpPost("{bracketId}/saveseed")]
+        public async Task<bool> SaveSeed([FromRoute] long bracketId, [FromBody] List<SeedItemDto> seedings)
+        {
+            _bracketService.SaveSeeding(bracketId, seedings);
 
             await _bracketService.SaveChanges();
 
