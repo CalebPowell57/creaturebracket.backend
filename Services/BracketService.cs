@@ -28,11 +28,9 @@ namespace Service
         public async Task<IEnumerable<StandingsDto>> GetStandings(long bracketId)
         {
             var bracket = await _dbSet
-                .Include(c => c.Creatures)
-                .Include(c => c.Matchups)
-                .Include(c => c.UserMatchups)
-                .Include(c => c.CreatureSubmissions)
-                .SingleAsync(x => x.Id == bracketId);
+                .Include(b => b.UserMatchups)
+                .Include(b => b.Matchups)
+                .SingleAsync(b => b.Id == bracketId);
 
             var standings = new List<StandingsDto>();
 
@@ -40,14 +38,16 @@ namespace Service
             {
                 var standing = new StandingsDto
                 {
-                    User = userMatchups.First().User,                    
+                    User = userMatchups.First().User,
                 };
 
                 foreach (var userMatchup in userMatchups)
                 {
                     var matchup = bracket.Matchups.Single(x => x.Rank == userMatchup.Rank && x.Round == userMatchup.Round);
 
-                    standing.Points += matchup.WinnerId == userMatchup.WinnerId ? 1 * matchup.Round : 0;
+                    var points = Math.Pow(2, matchup.Round - 1) == 0 ? 1 : (int)Math.Pow(2, matchup.Round - 1);
+
+                    standing.Points += matchup.WinnerId.HasValue && matchup.WinnerId == userMatchup.WinnerId ? points : 0;
                 }
 
                 standings.Add(standing);
@@ -68,7 +68,7 @@ namespace Service
                 throw new Exception($"Unable to seed {bracket.Name}. Not enough creature submissions {bracket.CreatureSubmissions.Count()}/{bracket.CreatureCount}");
             }
 
-            var randomSeeds = new List<(long Seed, string Name)>();
+            var randomSeeds = new List<(long Seed, string Name, long CreatureSubmissionId)>();
             var currentSeed = 1;
 
             foreach (var creatureSubmissionGroup in bracket.CreatureSubmissions.GroupBy(x => x.Votes.Count()).OrderByDescending(c => c.Key))
@@ -76,7 +76,7 @@ namespace Service
                 var random = new Random();
                 foreach (var creatureSubmission in creatureSubmissionGroup.OrderBy(x => random.Next()))
                 {
-                    (long Seed, string Name) seedItem = new(currentSeed, creatureSubmission.Name);
+                    (long Seed, string Name, long CreatureSubmissionId) seedItem = new(currentSeed, creatureSubmission.Name, creatureSubmission.Id);
 
                     randomSeeds.Add(seedItem);
 
@@ -93,6 +93,8 @@ namespace Service
 
                 var seedItem = new SeedItemDto
                 {
+                    Creature1SubmissionId = creature1.CreatureSubmissionId,
+                    Creature2SubmissionId = creature1.CreatureSubmissionId,
                     Creature1Name = creature1.Name,
                     Creature2Name = creature2.Name,
                     Creature1Seed = creature1.Seed,
@@ -133,6 +135,7 @@ namespace Service
             }
 
             bracket.Matchups = matchups;
+            bracket.Round = 1;
 
             Upsert(bracket);
         }
@@ -141,6 +144,8 @@ namespace Service
         {
             var bracket = _dbSet
                 .Include(b => b.Matchups)
+                .Include(b => b.CreatureSubmissions)
+                    .ThenInclude(cs => cs.Votes)
                 .Single(x => x.Id == bracketId)
             ;
 
@@ -156,6 +161,7 @@ namespace Service
                     CreatedBy = "calebpowell57",
                     Image = "",
                     Seed = s.Creature1Seed,
+                    Votes = bracket.CreatureSubmissions.Single(cs => cs.Id == s.Creature1SubmissionId).Votes.Count(),
                 },
                 BracketId = bracketId,
                 CreatedAt = DateTime.UtcNow,
@@ -168,12 +174,81 @@ namespace Service
                     CreatedBy = "calebpowell57",
                     Image = "",
                     Seed = s.Creature2Seed,
+                    Votes = bracket.CreatureSubmissions.Single(cs => cs.Id == s.Creature2SubmissionId).Votes.Count(),
                 },
-                Rank = seedings.IndexOf(s),
+                Rank = seedings.IndexOf(s) + 1,
                 Round = 1,
-            });
+            }).ToList();
+
+            var matchupCount = bracket.CreatureCount / 2;
+            var round = 1;
+
+            while (matchupCount != 1)
+            {
+                matchupCount /= 2;
+                round++;
+
+                for (var index = 0; index < matchupCount; index++)
+                {
+                    var matchup = new Matchup
+                    {
+                        BracketId = bracketId,
+                        CreatedAt = DateTime.UtcNow,
+                        CreatedBy = "calebpowell57",
+                        Round = round,
+                        Rank = index + 1,
+                    };
+
+                    matchups.Add(matchup);
+                }
+            }
 
             _context.Matchup.AddRange(matchups);
+
+            Upsert(bracket);
+        }
+
+        public void Battle(long bracketId)
+        {
+            var bracket = _dbSet
+                .Include(b => b.Matchups)
+                .Single(x => x.Id == bracketId)
+            ;
+
+            var isFinished = false;
+
+            foreach(var matchup in bracket.Matchups.Where(x => x.Round == bracket.Round))
+            {
+                //matchup.Creature1.Votes;
+                matchup.WinnerId = matchup.Creature1Id;//
+
+                var nextMatchup = bracket.Matchups.SingleOrDefault(x => x.Rank == Math.Ceiling((double)matchup.Rank / 2) && x.Round == bracket.Round + 1);
+
+                if (nextMatchup is not null)
+                {
+                    var isFirst = ((double)matchup.Rank / 2) % 1 != 0;
+
+                    if (isFirst)
+                    {
+                        nextMatchup.Creature1Id = matchup.WinnerId;
+                    }
+                    else
+                    {
+                        nextMatchup.Creature2Id = matchup.WinnerId;
+                    }
+
+                    _context.Matchup.Update(nextMatchup);
+                }
+                else
+                {
+                    isFinished = true;
+                }
+            }
+
+            if (!isFinished)
+            {
+                bracket.Round++;
+            }
 
             Upsert(bracket);
         }

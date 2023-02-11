@@ -68,5 +68,24 @@ namespace Service
 
             return dto;
         }
+
+        public void Save(string user, long bracketId, IEnumerable<UserMatchupDto> userMatchupDtos)
+        {
+            var dtos = userMatchupDtos.Select(x => new UserMatchupDto
+            {
+                BracketId = bracketId,
+                User = user,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = user,
+                Creature1Id = x.Creature1Id,
+                Creature2Id = x.Creature2Id,
+                Id = x.Id,
+                Rank = x.Rank,
+                Round = x.Round,
+                WinnerId = x.WinnerId,
+            });
+
+            Upsert(dtos);
+        }
     }
 }

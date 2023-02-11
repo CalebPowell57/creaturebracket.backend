@@ -25,5 +25,15 @@ namespace Api.Controllers
 
             return userMatchups;
         }
+
+        [HttpPost("{user}/{bracketId}")]
+        public async Task<bool> Post([FromRoute] string user, [FromRoute] long bracketId, [FromBody] IEnumerable<UserMatchupDto> userMatchups)
+        {
+            _userMatchupService.Save(user, bracketId, userMatchups);
+
+            await _userMatchupService.SaveChanges();
+
+            return true;
+        }
     }
 }

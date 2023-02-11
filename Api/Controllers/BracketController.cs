@@ -62,5 +62,15 @@ namespace Api.Controllers
 
             return true;
         }
+
+        [HttpPost("{bracketId}/battle")]
+        public async Task<bool> Battle([FromRoute] long bracketId)
+        {
+            _bracketService.Battle(bracketId);
+
+            await _bracketService.SaveChanges();
+
+            return true;
+        }
     }
 }

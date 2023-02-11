@@ -1,3 +1,5 @@
+using Model.Db.Interfaces;
+
 namespace Model.Db
 {
     public class UserMatchup : DataModel
@@ -10,8 +12,8 @@ namespace Model.Db
         public long? Creature2Id { get; set; }
         public long BracketId { get; set; }
 
-        public Creature Creature1 { get; set; }
-        public Creature Creature2 { get; set; }
-        public Creature Winner { get; set; }
+        public Creature? Creature1 { get; set; }
+        public Creature? Creature2 { get; set; }
+        public Creature? Winner { get; set; }
     }
 }

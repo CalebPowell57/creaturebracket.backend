@@ -8,6 +8,7 @@ namespace Model.Mapping
         {
             MapBracket();
             MapCreatureSubmission();
+            MapUserMatchup();
         }
     }
 }

@@ -6,5 +6,6 @@ namespace Model.Db
         public string Name { get; set; }
         public string Image { get; set; }
         public long BracketId { get; set; }
+        public long Votes { get; set; }
     }
 }

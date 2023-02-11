@@ -3,7 +3,7 @@ namespace Model.Db
     public class Bracket : DataModel
     {
         public string Name { get; set; }
-        public long RoundCount { get; set; }
+        public long Round { get; set; }
         public long CreatureCount { get; set; }
         public string Phase { get; set; }
 
