@@ -136,6 +136,7 @@ namespace Service
 
             bracket.Matchups = matchups;
             bracket.Round = 1;
+            bracket.Phase = Constants.BracketPhase.CreatureSubmission;
 
             Upsert(bracket);
         }
